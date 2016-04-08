@@ -1085,14 +1085,74 @@ nexus_upload(
 
 ### [Appetize.io](https://appetize.io/)
 
-Upload your zipped app to Appetize.io
+Upload your zipped app to Appetize.io to stream your app in the browser. This requires your app to be built for the iOS simulator and not the device.
 
 ```ruby
 appetize(
-  api_token: 'yourapitoken',
-  url: 'https://example.com/your/zipped/app.zip',
-  private_key: 'yourprivatekey'
+  path: './MyApp.zip',
+  api_token: 'yourapitoken', # get it from https://appetize.io/docs#request-api-token
+  public_key: 'your_public_key' # get it from https://appetize.io/dashboard
 )
+```
+
+If you provide a `public_key`, this will overwrite an existing application. If you want to have this build as a new app version, you shouldn't provide this value.
+
+#### `device_grid` for your Pull Requests
+
+![../lib/fastlane/actions/device_grid/assets/GridExampleScreenshot.png](../lib/fastlane/actions/device_grid/assets/GridExampleScreenshot.png)
+
+Follow [this guide](https://github.com/fastlane/fastlane/blob/master/fastlane/lib/fastlane/actions/device_grid/README.md) to get a grid of devices every time you submit a pull request. The apps will be uploaded to [appetize.io](https://appetize.io/) so you can stream and try them right in your browser.
+
+[Open the Guide](https://github.com/fastlane/fastlane/blob/master/fastlane/lib/fastlane/actions/device_grid/README.md)
+
+#### Manually build and upload to [Appetize.io](https://appetize.io/)
+
+```ruby
+desc "Build your app and upload it to Appetize to stream it in your browser"
+lane :upload_to_appetize do
+  import_from_git(url: "https://github.com/fastlane/fastlane",
+                 path: "fastlane/lib/fastlane/actions/device_grid/AppetizeFastfile")
+
+  build_and_upload_appetize(
+    xcodebuild: {
+      workspace: "YourApp.xcworkspace",
+      scheme: "YourScheme"
+    }
+  )
+end
+```
+
+#### Manually using `appetize_url_generator`
+
+Use the `appetize` action together with `appetize_url_generator`
+
+```ruby
+tmp_path = "/tmp/fl_build"
+xcodebuild(
+  workspace: "Themoji.xcworkspace",
+  sdk: "iphonesimulator",
+  scheme: "Themoji",
+  derivedDataPath: tmp_path
+)
+
+app_path = Dir[File.join(tmp_path, "**", "*.app")].last
+UI.user_error!("Couldn't find app") unless app_path
+
+zipped_ipa = zip(path: app_path, output_path: File.join(tmp_path, "Result.zip"))
+
+appetize(
+  path: zipped_ipa,
+  api_token: 'yourapitoken' # get it from https://appetize.io/docs#request-api-token
+)
+
+url = appetize_url_generator(scale: "75", color: "black")
+UI.message("Generated URL: #{url}")
+```
+
+From within your app, you can check it is currently running on [Appetize.io](https://appetize.io/) using 
+
+```objective-c
+[[NSUserDefaults standardUserDefaults] objectForKey:@"isAppetize"]
 ```
 
 ### [Appaloosa](https://www.appaloosa-store.com)
